@@ -42,7 +42,7 @@
         dest: /usr/local/mysql
         state: link
 
-    - name: Change ownership/group of mysal directory
+    - name: Change ownership/group of mysql directory
       ansible.builtin.file:
         path: /usr/local/mysql
         owner: mysql
@@ -51,7 +51,7 @@
         state: directory
 
     - name: Install database
-      ansible.builtin.shell: sripts/mysql_install_db --user=mysql
+      ansible.builtin.shell: scripts/mysql_install_db --user=mysql
       args:
         chdir: /usr/local/mysql
   
@@ -69,3 +69,11 @@
       ansible.builtin.shell: bin/mysqld_safe --user=mysql &
       args:
         chdir: /usr/local/mysql
+
+    - name: Copy mysql.server script to /etc/
+      copy:
+        src: /usr/local/mysql/support-files/mysql.server
+        dest: /etc/init.d/mysql.server
+        owner: root
+        group: root
+        mode: '0755'
