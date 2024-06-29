@@ -1,7 +1,71 @@
 ---
-- name: Hello World Playbook
+- name: Install MySQL 5.5.22 on Linux
   hosts: localhost
+  become: yes
   tasks:
-    - name: Print Hello World
-      debug:
-        msg: "Hello, World!"
+    - name: Update apt package
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install libaio1 
+      ansible.builtin.apt:
+        name: libaio1
+        state: present
+
+    - name: Transferring the MySQL download
+      copy:
+        src: #path to download on master
+        dest: #path to destination on nodes
+        mode: '0644'
+
+    - name: Add group MySQL
+      group:
+        name: mysql
+        state: present
+    
+    - name: Create mysql user
+      user:
+        name: mysql
+        group: mysql 
+        system: yes
+        shell: /bin/false
+
+    - name: Extract MySQL download
+      unarchive:
+        src: #path to download on node
+        dest: /usr/local/
+        remote_src: yes
+
+    - name: Create symbolic link
+      ansible.builtin.file:
+        src: /usr/local/mysql-5.5.22-linux2.6-x86_64
+        dest: /usr/local/mysql
+        state: link
+
+    - name: Change ownership/group of mysal directory
+      ansible.builtin.file:
+        path: /usr/local/mysql
+        owner: mysql
+        group: mysql
+        recurse: true
+        state: directory
+
+    - name: Install database
+      ansible.builtin.shell: sripts/mysql_install_db --user=mysql
+      args:
+        chdir: /usr/local/mysql
+  
+    - name: change ownership of mysql again
+      ansible.builtin.shell: chown -R root .
+      args:
+        chdir: /usr/local/mysql
+
+    - name: change ownership of data directory
+      ansible.builtin.shell: chown -R mysql data
+      args:
+        chdir: /usr/local/mysql
+
+    - name: Execute mysqld_safe
+      ansible.builtin.shell: bin/mysqld_safe --user=mysql &
+      args:
+        chdir: /usr/local/mysql
